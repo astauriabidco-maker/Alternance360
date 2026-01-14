@@ -1,0 +1,160 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - link "Alternance360" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img [ref=e7]
+        - generic [ref=e10]: Alternance360
+      - heading "Bienvenue." [level=2] [ref=e11]
+      - paragraph [ref=e12]: Connectez-vous pour accéder à votre livret d'apprentissage.
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - text: Email Professionnel
+          - generic [ref=e15]:
+            - img [ref=e16]
+            - textbox "nom@cfa.fr" [ref=e19]: apprenti@demo.com
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]: Mot de passe
+            - link "Oublié ?" [ref=e23] [cursor=pointer]:
+              - /url: "#"
+          - generic [ref=e24]:
+            - img [ref=e25]
+            - textbox "••••••••" [ref=e28]: password123
+        - button "Se connecter" [ref=e29]
+        - generic [ref=e34]: Accès rapide
+        - button "Lien magique (Tuteurs)" [ref=e35]:
+          - img [ref=e36]
+          - text: Lien magique (Tuteurs)
+        - paragraph [ref=e40]:
+          - text: Pas encore de compte ?
+          - link "Créer mon espace CFA" [ref=e41] [cursor=pointer]:
+            - /url: /register
+      - generic [ref=e42]:
+        - img [ref=e44]
+        - paragraph [ref=e47]:
+          - text: Plateforme sécurisée conforme Qualiopi & RGPD.
+          - text: Vos données sont hébergées en France.
+    - generic [ref=e53]:
+      - img [ref=e55]
+      - heading "L'excellence au service de l'apprentissage." [level=3] [ref=e58]
+      - paragraph [ref=e59]: Plus de 500 CFA utilisent déjà Alternance360 pour sécuriser leurs parcours de formation.
+      - generic [ref=e61]:
+        - generic [ref=e62]: A
+        - generic [ref=e63]:
+          - generic [ref=e64]: Instance Active
+          - generic [ref=e65]: Alternance360
+  - generic [active]:
+    - generic [ref=e73]:
+      - generic [ref=e74]:
+        - generic [ref=e75]:
+          - navigation [ref=e76]:
+            - button "previous" [disabled] [ref=e77]:
+              - img "previous" [ref=e78]
+            - generic [ref=e80]:
+              - generic [ref=e81]: 1/
+              - text: "1"
+            - button "next" [disabled] [ref=e82]:
+              - img "next" [ref=e83]
+          - img
+        - generic [ref=e85]:
+          - link "Next.js 16.1.0 (stale) Turbopack" [ref=e86] [cursor=pointer]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+            - img [ref=e87]
+            - generic "There is a newer version (16.1.1) available, upgrade recommended!" [ref=e89]: Next.js 16.1.0 (stale)
+            - generic [ref=e90]: Turbopack
+          - img
+      - dialog "Build Error" [ref=e92]:
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - generic [ref=e99]: Build Error
+              - generic [ref=e100]:
+                - button "Copy Error Info" [ref=e101] [cursor=pointer]:
+                  - img [ref=e102]
+                - link "Go to related documentation" [ref=e104] [cursor=pointer]:
+                  - /url: https://nextjs.org/docs/messages/module-not-found
+                  - img [ref=e105]
+                - button "Attach Node.js inspector" [ref=e107] [cursor=pointer]:
+                  - img [ref=e108]
+            - generic [ref=e117]: "Module not found: Can't resolve '@/components/ui/accordion'"
+          - generic [ref=e119]:
+            - generic [ref=e121]:
+              - img [ref=e123]
+              - generic [ref=e126]: ./components/dashboard/tsf-view.tsx (4:1)
+              - button "Open in editor" [ref=e127] [cursor=pointer]:
+                - img [ref=e129]
+            - generic [ref=e132]:
+              - generic [ref=e133]: Module not found
+              - generic [ref=e134]: ": Can't resolve"
+              - text: "'@/components/ui/accordion'"
+              - generic [ref=e135]: 2 |
+              - generic [ref=e136]: 3 |
+              - text: import
+              - generic [ref=e137]: "{ useState"
+              - text: ","
+              - generic [ref=e138]: "useTransition }"
+              - text: from 'react' >
+              - generic [ref=e139]: 4 |
+              - text: import
+              - generic [ref=e140]: "{"
+              - generic [ref=e141]: "|"
+              - text: ^^^^^^^^ >
+              - generic [ref=e142]: 5 |
+              - text: Accordion,
+              - generic [ref=e143]: "|"
+              - text: ^^^^^^^^^^^^^^ >
+              - generic [ref=e144]: 6 |
+              - text: AccordionContent,
+              - generic [ref=e145]: "|"
+              - text: ^^^^^^^^^^^^^^ >
+              - generic [ref=e146]: 7 |
+              - text: AccordionItem,
+              - generic [ref=e147]: "|"
+              - text: ^^^^^^^^^^^^^^ >
+              - generic [ref=e148]: 8 |
+              - text: AccordionTrigger
+              - generic [ref=e149]: "|"
+              - text: ^^^^^^^^^^^^^^ >
+              - generic [ref=e150]: 9 |
+              - generic [ref=e151]: "}"
+              - text: from "@/components/ui/accordion"
+              - generic [ref=e152]: "|"
+              - text: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              - generic [ref=e153]: 10 |
+              - text: import
+              - generic [ref=e154]: "{"
+              - text: Checkbox
+              - generic [ref=e155]: "}"
+              - text: from "@/components/ui/checkbox"
+              - generic [ref=e156]: 11 |
+              - text: import
+              - generic [ref=e157]: "{"
+              - text: Progress
+              - generic [ref=e158]: "}"
+              - text: from "@/components/ui/progress"
+              - generic [ref=e159]: 12 |
+              - text: import
+              - generic [ref=e160]: "{"
+              - text: Badge
+              - generic [ref=e161]: "}"
+              - text: from "@/components/ui/badge"
+              - generic [ref=e162]:
+                - text: "Import map: aliased to relative './components/ui/accordion' inside of [project]/ Import trace: Server Component: ./components/dashboard/tsf-view.tsx ./app/dashboard/tsf-demo/page.tsx"
+                - link "https://nextjs.org/docs/messages/module-not-found" [ref=e163] [cursor=pointer]:
+                  - /url: https://nextjs.org/docs/messages/module-not-found
+        - generic [ref=e164]: "1"
+        - generic [ref=e165]: "2"
+    - generic [ref=e170] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e171]:
+        - img [ref=e172]
+      - button "Open issues overlay" [ref=e176]:
+        - generic [ref=e177]:
+          - generic [ref=e178]: "0"
+          - generic [ref=e179]: "1"
+        - generic [ref=e180]: Issue
+  - alert [ref=e181]
+```

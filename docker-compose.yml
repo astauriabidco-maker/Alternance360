@@ -1,0 +1,15 @@
+services:
+  app:
+    container_name: alternance-360-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "2222:2222"
+    # environment:
+    #   - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+    #   - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    # Load env file for sensitive vars if processed on host, or rely on environment above
+    env_file:
+      - .env.local

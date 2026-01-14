@@ -1,0 +1,73 @@
+
+> alternance-360@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.208.40.139:3000
+- Environments: .env.local, .env
+- Experiments (use with caution):
+  · serverActions
+
+✓ Starting...
+✓ Ready in 835ms
+ GET /login?error=Email%20ou%20mot%20de%20passe%20incorrect 200 in 903ms (compile: 765ms, render: 137ms)
+[33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev
+ [AUTH DEBUG] JWT Callback { tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2', hasUser: false }
+ [AUTH DEBUG] Session Callback {
+  sessionUser: 'admin@demo.com',
+  tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2'
+}
+ GET /api/auth/session 200 in 1477ms (compile: 1442ms, render: 35ms)
+ [AUTH DEBUG] JWT Callback { tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2', hasUser: false }
+ [AUTH DEBUG] Session Callback {
+  sessionUser: 'admin@demo.com',
+  tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2'
+}
+ GET /api/auth/session 200 in 32ms (compile: 9ms, render: 23ms)
+[33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev
+ [AUTH DEBUG] JWT Callback { tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2', hasUser: false }
+ [AUTH DEBUG] Session Callback {
+  sessionUser: 'admin@demo.com',
+  tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2'
+}
+ GET /login?error=Email+ou+mot+de+passe+incorrect 200 in 191ms (compile: 114ms, render: 77ms)
+ [AUTH DEBUG] JWT Callback { tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2', hasUser: false }
+ [AUTH DEBUG] Session Callback {
+  sessionUser: 'admin@demo.com',
+  tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2'
+}
+ [AUTH DEBUG] JWT Callback { tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2', hasUser: false }
+ [AUTH DEBUG] Session Callback {
+  sessionUser: 'admin@demo.com',
+  tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2'
+}
+ GET /dashboard 200 in 389ms (compile: 332ms, render: 57ms)
+ GET /dashboard 200 in 43ms (compile: 1198µs, render: 42ms)
+ [AUTH DEBUG] JWT Callback { tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2', hasUser: false }
+ [AUTH DEBUG] Session Callback {
+  sessionUser: 'admin@demo.com',
+  tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2'
+}
+ GET /api/auth/session 200 in 1482ms (compile: 248ms, render: 1234ms)
+ [AUTH DEBUG] JWT Callback { tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2', hasUser: false }
+ [AUTH DEBUG] Session Callback {
+  sessionUser: 'admin@demo.com',
+  tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2'
+}
+ GET /api/auth/session 200 in 136ms (compile: 46ms, render: 90ms)
+ [AUTH DEBUG] JWT Callback { tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2', hasUser: false }
+ [AUTH DEBUG] Session Callback {
+  sessionUser: 'admin@demo.com',
+  tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2'
+}
+ GET /api/auth/session 200 in 310ms (compile: 194ms, render: 116ms)
+ [AUTH DEBUG] JWT Callback { tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2', hasUser: false }
+ [AUTH DEBUG] Session Callback {
+  sessionUser: 'admin@demo.com',
+  tokenSub: '24e1f247-ac34-4912-a87b-fa9fb73775f2'
+}
+ GET /api/auth/session 200 in 14ms (compile: 5ms, render: 9ms)
+ POST /seed/hgd 404 in 714ms (compile: 494ms, render: 220ms)
+ POST /api/seed/hgd 404 in 125ms (compile: 50ms, render: 75ms)
+[?25h
