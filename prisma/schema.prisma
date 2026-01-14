@@ -38,6 +38,7 @@ model Tenant {
   subscription     Subscription?
   auditSessions    AuditSession[]
   roles            Role[]
+  trainingOffers   TrainingOffer[]
 }
 
 // 2. Users (Apprentice, Tutor, Formateur, Admin)
@@ -98,6 +99,7 @@ model Referentiel {
 
   blocs     BlocCompetence[]
   contracts Contract[]
+  trainingOffers TrainingOffer[]
 }
 
 
@@ -421,6 +423,38 @@ model Lead {
     status      String   @default("PENDING") // PENDING, PROCESSED, REJECTED
     processedAt DateTime?
     createdAt   DateTime @default(now())
+
+    trainingOfferId String?
+    trainingOffer   TrainingOffer? @relation(fields: [trainingOfferId], references: [id])
+}
+
+model TrainingOffer {
+  id          String   @id @default(uuid())
+  title       String   // Marketing Title (e.g. "BTS MCO - Rentrée Sept 2026")
+  description String?  // Commercial Pitch
+  
+  // Commercial Info
+  status      String   @default("DRAFT") // DRAFT, OPEN, CLOSED, FULL
+  price       Float    // Public Price
+  funding     String?  // Funding details (OPCO, CPF, etc.)
+  
+  // Logistics
+  startDate   DateTime
+  endDate     DateTime
+  duration    Int      // In Hours
+  campus      String?  // Location
+  seats       Int?     // Max capacity, optional
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  referentielId String
+  referentiel   Referentiel @relation(fields: [referentielId], references: [id], onDelete: Cascade)
+  
+  leads         Lead[]      // Link leads to specific offers
 }
 // 7. Platform Wide (Super Admin)
 model AuditLog {

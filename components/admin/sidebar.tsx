@@ -13,7 +13,8 @@ import {
     GraduationCap,
     BarChart3,
     Shield,
-    ClipboardCheck
+    ClipboardCheck,
+    Briefcase
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SignOutButton } from '@/components/auth/sign-out-button'
@@ -27,6 +28,7 @@ const navigation = [
     { name: 'Contrats', href: '/admin/contracts', icon: FileText },
     { name: 'Suivi Apprentis', href: '/admin/suivi', icon: GraduationCap },
     { name: 'Atelier', href: '/admin/referentiels', icon: Wrench },
+    { name: 'Offres de Formation', href: '/admin/offres', icon: Briefcase },
     { name: 'Marketplace', href: '/admin/marketplace', icon: Store },
     { name: 'Configuration', href: '/admin/settings', icon: Settings },
 ]
