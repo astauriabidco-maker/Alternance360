@@ -78,12 +78,21 @@ export async function provisionTenant(leadId: string) {
 
         revalidatePath('/super-admin/tenants')
         revalidatePath('/super-admin/leads')
+
+        // Send Welcome Email asynchronously (fire and forget to not block UI)
+        sendTenantWelcomeEmail(lead.email, result.tenant.name, process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
+            .catch(err => console.error("Failed to send welcome email", err))
+
         return { success: true, tenantId: result.tenant.id }
     } catch (error) {
         console.error('Provisioning error:', error)
         throw new Error('Erreur lors du déploiement de l\'instance')
     }
 }
+
+// Helper to send email after transaction (best practice: don't block transaction on email)
+// We already log audit event, now we send email.
+import { sendTenantWelcomeEmail } from '@/lib/email'
 
 export async function rejectLead(leadId: string) {
     const session = await auth()
@@ -253,7 +262,7 @@ export async function getSubscriptions() {
 
     return await db.subscription.findMany({
         include: {
-            tenant: { select: { name: true } },
+            tenant: { select: { name: true, address: true } },
             invoices: { orderBy: { createdAt: 'desc' }, take: 1 }
         },
         orderBy: { startDate: 'desc' }
@@ -478,27 +487,72 @@ export async function updateTenantCompliance(formData: FormData) {
 
 
 
-export async function savePlatformConfig(key: string, value: string) {
+export async function getPlatformSettings() {
     const session = await auth()
     if (!session || session.user.role !== 'super_admin') throw new Error('Non autorisé')
 
+    // Ensure defaults exist
+    await initializeDefaultConfig()
+
+    const settings = await db.platformConfig.findMany({
+        orderBy: { key: 'asc' }
+    })
+
+    // Mask secrets
+    return settings.map(s => ({
+        ...s,
+        value: s.isSecret ? '********' : s.value
+    }))
+}
+
+export async function savePlatformConfig(key: string, value: string, group: string = 'GENERAL', isSecret: boolean = false) {
+    const session = await auth()
+    if (!session || session.user.role !== 'super_admin') throw new Error('Non autorisé')
+
+    // If it's a secret and value is masked, don't update it
+    if (isSecret && value === '********') {
+        return { success: true }
+    }
+
     await db.platformConfig.upsert({
         where: { key },
-        update: { value },
-        create: { key, value }
+        update: { value, group, isSecret },
+        create: { key, value, group, isSecret }
     })
 
     await logAuditEvent('SUPER_ADMIN_UPDATE_CONFIG', 'PlatformConfig', key, {
         adminId: session.user.id,
-        value
+        updated: true
     })
 
     revalidatePath('/super-admin/config')
     return { success: true }
 }
-export async function getPlatformSettings() {
-    const session = await auth()
-    if (!session || session.user.role !== 'super_admin') throw new Error('Non autorisé')
 
-    return await db.platformConfig.findMany()
+async function initializeDefaultConfig() {
+    const defaults = [
+        { key: "platform_name", value: "Alternance 360", group: "BRANDING" },
+        { key: "support_email", value: "support@alternance360.com", group: "BRANDING" },
+        { key: "maintenance_mode", value: "false", group: "SECURITY" },
+        { key: "self_registration", value: "false", group: "SECURITY" },
+        { key: "audit_verbose", value: "false", group: "TECH" },
+        { key: "smtp_host", value: "smtp.sendgrid.net", group: "TECH", isSecret: true },
+        { key: "smtp_user", value: "apikey", group: "TECH", isSecret: true },
+        { key: "smtp_pass", value: "", group: "TECH", isSecret: true }, // Added
+        { key: "smtp_port", value: "587", group: "TECH", isSecret: false }, // Added
+    ]
+
+    for (const def of defaults) {
+        const exists = await db.platformConfig.findUnique({ where: { key: def.key } })
+        if (!exists) {
+            await db.platformConfig.create({
+                data: {
+                    key: def.key,
+                    value: def.value,
+                    group: def.group || 'GENERAL',
+                    isSecret: def.isSecret || false
+                }
+            })
+        }
+    }
 }

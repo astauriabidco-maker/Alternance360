@@ -19,7 +19,8 @@ import {
     ClipboardCheck,
     FileText,
     PieChart,
-    Globe
+    Globe,
+    MessageSquare
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SignOutButton } from '@/components/auth/sign-out-button'
@@ -39,6 +40,7 @@ const navigation = [
         children: [
             { name: 'Tenants (CFA)', href: '/super-admin/tenants', icon: Building2 },
             { name: 'Leads entrants', href: '/super-admin/leads', icon: Inbox },
+            { name: 'Support Center', href: '/super-admin/support', icon: MessageSquare },
             { name: 'Supervision Flux', href: '/admin/supervision', icon: BarChart3 },
         ]
     },
@@ -137,8 +139,8 @@ export function SuperAdminSidebar() {
                         const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                         return (
                             <Link
-                                key={item.href}
-                                href={item.href}
+                                key={item.href || item.name}
+                                href={item.href ?? '#'}
                                 className={cn(
                                     "flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all duration-200 group",
                                     isActive

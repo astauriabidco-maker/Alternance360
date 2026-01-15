@@ -24,12 +24,15 @@ type GlobalReferentiel = {
     author: string | null
     downloadCount: number
     certificationLevel: string | null
+    domain: string | null
     _count: { blocs: number }
 }
 
 export function MarketplaceClient({ referentiels }: { referentiels: GlobalReferentiel[] }) {
     const [search, setSearch] = useState('')
-    const [filter, setFilter] = useState<string | null>(null)
+    const [levelFilter, setLevelFilter] = useState<string | null>(null)
+    const [domainFilter, setDomainFilter] = useState<string | null>(null)
+    const [authorFilter, setAuthorFilter] = useState<string | null>(null)
     const [forking, setForking] = useState<string | null>(null)
 
     const certificationLevels = useMemo(() => {
@@ -37,14 +40,26 @@ export function MarketplaceClient({ referentiels }: { referentiels: GlobalRefere
         return Array.from(levels) as string[]
     }, [referentiels])
 
+    const domains = useMemo(() => {
+        const d = new Set(referentiels.map(r => r.domain).filter(Boolean))
+        return Array.from(d) as string[]
+    }, [referentiels])
+
+    const authors = useMemo(() => {
+        const a = new Set(referentiels.map(r => r.author).filter(Boolean))
+        return Array.from(a) as string[]
+    }, [referentiels])
+
     const filtered = useMemo(() => {
         return referentiels.filter(ref => {
             const matchSearch = ref.title.toLowerCase().includes(search.toLowerCase()) ||
                 ref.codeRncp.toLowerCase().includes(search.toLowerCase())
-            const matchFilter = !filter || ref.certificationLevel === filter
-            return matchSearch && matchFilter
+            const matchLevel = !levelFilter || ref.certificationLevel === levelFilter
+            const matchDomain = !domainFilter || ref.domain === domainFilter
+            const matchAuthor = !authorFilter || ref.author === authorFilter
+            return matchSearch && matchLevel && matchDomain && matchAuthor
         })
-    }, [referentiels, search, filter])
+    }, [referentiels, search, levelFilter, domainFilter, authorFilter])
 
     const handleFork = async (id: string) => {
         setForking(id)
@@ -111,14 +126,15 @@ export function MarketplaceClient({ referentiels }: { referentiels: GlobalRefere
                         </div>
                     </div>
 
-                    {/* Filter Chips */}
+                    {/* Filter Chips - Levels */}
                     {certificationLevels.length > 0 && (
                         <div className="flex flex-wrap justify-center gap-2 mt-6">
+                            <span className="text-white/40 text-xs font-bold uppercase tracking-widest py-1.5">Niveau:</span>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className={`rounded-full px-4 ${!filter ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
-                                onClick={() => setFilter(null)}
+                                className={`rounded-full px-4 ${!levelFilter ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                                onClick={() => setLevelFilter(null)}
                             >
                                 Tous
                             </Button>
@@ -127,14 +143,51 @@ export function MarketplaceClient({ referentiels }: { referentiels: GlobalRefere
                                     key={level}
                                     variant="ghost"
                                     size="sm"
-                                    className={`rounded-full px-4 ${filter === level ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
-                                    onClick={() => setFilter(level)}
+                                    className={`rounded-full px-4 ${levelFilter === level ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                                    onClick={() => setLevelFilter(level)}
                                 >
                                     {level}
                                 </Button>
                             ))}
                         </div>
                     )}
+
+                    {/* Filter Chips - Domains & Certifiers */}
+                    <div className="flex flex-col items-center gap-4 mt-6">
+                        {domains.length > 0 && (
+                            <div className="flex flex-wrap justify-center gap-2 items-center">
+                                <span className="text-white/40 text-xs font-bold uppercase tracking-widest">Domaine:</span>
+                                {domains.map(dom => (
+                                    <Button
+                                        key={dom}
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`rounded-full px-4 ${domainFilter === dom ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                                        onClick={() => setDomainFilter(domainFilter === dom ? null : dom)}
+                                    >
+                                        {dom}
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
+
+                        {authors.length > 0 && (
+                            <div className="flex flex-wrap justify-center gap-2 items-center">
+                                <span className="text-white/40 text-xs font-bold uppercase tracking-widest">Auteur:</span>
+                                {authors.map(auth => (
+                                    <Button
+                                        key={auth}
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`rounded-full px-4 ${authorFilter === auth ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                                        onClick={() => setAuthorFilter(authorFilter === auth ? null : auth)}
+                                    >
+                                        {auth}
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </header>
 
@@ -155,6 +208,11 @@ export function MarketplaceClient({ referentiels }: { referentiels: GlobalRefere
                                     {ref.certificationLevel && (
                                         <Badge className={getCertificationColor(ref.certificationLevel)}>
                                             {ref.certificationLevel}
+                                        </Badge>
+                                    )}
+                                    {ref.domain && (
+                                        <Badge variant="outline" className="text-xs text-slate-500 border-slate-200">
+                                            {ref.domain}
                                         </Badge>
                                     )}
                                     <Badge className="bg-amber-50 text-amber-700 border-amber-200 gap-1">

@@ -14,7 +14,9 @@ import {
     CreditCard
 } from "lucide-react"
 
-import { EngagementCharts } from "@/components/super-admin/engagement-charts"
+import { RevenueChart } from '@/components/super-admin/charts/revenue-chart'
+import { TenantGrowthChart } from '@/components/super-admin/charts/tenant-growth-chart'
+import { PlanDistributionChart } from '@/components/super-admin/charts/plan-distribution-chart'
 
 export default async function SuperAdminDashboard() {
     const stats = await getGlobalStats()
@@ -83,12 +85,32 @@ export default async function SuperAdminDashboard() {
                 ))}
             </div>
 
-            <EngagementCharts data={{
-                totalUsers: stats.userCount,
-                activeContracts: stats.contractCount,
-                totalRevenue: 24500, // Mock revenue for now
-                monthlyGrowth: "+12.5%"
-            }} />
+            {/* Analytics Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 p-8 rounded-[2.5rem] bg-white border border-slate-100 shadow-xl shadow-slate-200/40">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900">Évolution du Chiffre d'Affaires</h3>
+                            <p className="text-sm text-slate-500 font-medium">Revenu récurrent mensuel (MRR) sur l'année</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <span className="px-3 py-1 rounded-full bg-slate-100 text-xs font-bold text-slate-600">2026</span>
+                        </div>
+                    </div>
+                    <RevenueChart />
+                </div>
+
+                <div className="space-y-6">
+                    <div className="p-8 rounded-[2.5rem] bg-white border border-slate-100 shadow-xl shadow-slate-200/40">
+                        <h3 className="text-lg font-black text-slate-900 mb-4">Acquisition Tenants</h3>
+                        <TenantGrowthChart />
+                    </div>
+                    <div className="p-8 rounded-[2.5rem] bg-white border border-slate-100 shadow-xl shadow-slate-200/40">
+                        <h3 className="text-lg font-black text-slate-900 mb-4">Plans Distribution</h3>
+                        <PlanDistributionChart />
+                    </div>
+                </div>
+            </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 bg-white rounded-[3rem] border border-slate-100 p-10 shadow-sm relative overflow-hidden">

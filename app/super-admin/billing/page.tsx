@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
+import { InvoiceButton } from "@/components/super-admin/billing/invoice-button"
 
 export default async function BillingPage() {
     const subscriptions = await getSubscriptions()
@@ -120,7 +121,7 @@ export default async function BillingPage() {
                                     </td>
                                     <td className="p-8">
                                         <Badge className={`rounded-lg py-1 px-3 border-0 font-black ${sub.plan === 'ENTERPRISE' ? 'bg-indigo-600 text-white' :
-                                                sub.plan === 'PRO' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
+                                            sub.plan === 'PRO' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
                                             }`}>
                                             {sub.plan}
                                         </Badge>
@@ -139,9 +140,7 @@ export default async function BillingPage() {
                                         <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">le {format(new Date(sub.invoices[0]?.createdAt), 'dd/MM/yyyy')}</div>
                                     </td>
                                     <td className="p-8 text-right">
-                                        <Button variant="ghost" className="w-10 h-10 p-0 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all">
-                                            <Eye size={18} />
-                                        </Button>
+                                        <InvoiceButton invoice={sub.invoices[0]} tenant={sub.tenant} plan={sub.plan} />
                                     </td>
                                 </tr>
                             ))

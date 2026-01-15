@@ -39,6 +39,7 @@ model Tenant {
   auditSessions    AuditSession[]
   roles            Role[]
   trainingOffers   TrainingOffer[]
+  supportTickets   SupportTicket[]
 }
 
 // 2. Users (Apprentice, Tutor, Formateur, Admin)
@@ -79,6 +80,10 @@ model User {
   evaluationsReceived EvaluationIndicateur[] @relation("ApprenticeEvaluations")
   evaluationsValidated EvaluationIndicateur[] @relation("TutorEvaluations")
   reportsGenerated HistoricalReport[]
+  
+  // Ticketing
+  ticketsAssigned SupportTicket[] @relation("TicketAssignee")
+  ticketsCreated  TicketMessage[] 
 }
 
 // 3. Referentiels (RNCP)
@@ -93,6 +98,7 @@ model Referentiel {
   author             String?
   downloadCount      Int      @default(0)
   certificationLevel String?  // CAP, BTS, Licence Pro, etc.
+  domain             String?  // Secteur d'activité (ex: Commerce, Informatique)
 
   tenantId String? // Optional if isGlobal
   tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -472,6 +478,8 @@ model PlatformConfig {
     key         String   @id
     value       String
     description String?
+    group       String   @default("GENERAL") // GENERAL, BRANDING, SECURITY, TECH
+    isSecret    Boolean  @default(false)
     updatedAt   DateTime @updatedAt
 }
 
@@ -570,4 +578,36 @@ model Role {
     updatedAt   DateTime @updatedAt
 
     @@unique([tenantId, name])
+}
+
+// 12. Support Ticketing System
+model SupportTicket {
+  id          String   @id @default(uuid())
+  subject     String
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH
+  category    String   @default("GENERAL") // TECH, BILLING, PEDAGOGY
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Optional: Assign to specific admin
+  assignedToId String?
+  assignedTo   User?   @relation("TicketAssignee", fields: [assignedToId], references: [id])
+
+  messages TicketMessage[]
+}
+
+model TicketMessage {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
 }
