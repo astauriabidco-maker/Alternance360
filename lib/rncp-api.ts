@@ -1,6 +1,6 @@
 
 export async function fetchRNCPBasicInfo(rncpCode: string) {
-    const baseUrl = "https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/fiches-rncp/records";
+    const baseUrl = "https://data.apprentissage.beta.gouv.fr/api/explore/v2.1/catalog/datasets/fiches-rncp/records";
     // Construct query to filter by numero_fiche exact match
     const query = `where=numero_fiche="${rncpCode}"&limit=1`;
     const url = `${baseUrl}?${query}`;

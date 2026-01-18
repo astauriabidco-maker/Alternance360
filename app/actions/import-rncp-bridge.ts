@@ -29,27 +29,30 @@ export async function enrichRNCPAction(apiData: any) {
     DONNÉES BRUTES :
     Titre : ${apiData.title}
     Code : ${apiData.id_national}
+    Niveau : ${apiData.level}
     Blocs bruts : ${JSON.stringify(apiData.raw_blocks).slice(0, 25000)} 
 
     CONSIGNES :
     1. Identifie chaque "Bloc de compétences".
     2. Pour chaque bloc, liste les "Compétences" associées.
-    3. POUR CHAQUE COMPÉTENCE : Génère exactement 3 "Indicateurs Observables". 
+    3. POUR CHAQUE COMPÉTENCE : Génére exactement 3 "Indicateurs Observables". 
        Un indicateur doit être une action concrète que le tuteur en entreprise peut observer (ex: "L'apprenti utilise le logiciel X pour...", "Le document produit respecte la norme Y...").
     
     FORMAT DE RÉPONSE ATTENDU (JSON STRICT) :
     {
-      "blocks": [
+      "code_rncp": "${apiData.id_national}",
+      "title": "${apiData.title}",
+      "certificationLevel": "${apiData.level}",
+      "blocs": [
         {
           "title": "Nom du Bloc",
-          "code": "Uxx",
-          "competencies": [
+          "competences": [
             {
               "description": "Libellé de la compétence",
-              "indicators": [
-                "Indicateur 1",
-                "Indicateur 2",
-                "Indicateur 3"
+              "indicateurs": [
+                { "label": "Indicateur 1" },
+                { "label": "Indicateur 2" },
+                { "label": "Indicateur 3" }
               ]
             }
           ]
@@ -76,6 +79,8 @@ export async function enrichRNCPAction(apiData: any) {
 }
 
 // 3. Step 3: Save to DB
+import { saveReferentielToDb, RNCPSchema } from "./rncp-utils";
+
 export async function saveRNCPAction(rncpCode: string, title: string, structuredData: any) {
     const session = await auth();
     if (!session?.user?.id) return { success: false, error: "Non connecté" };
@@ -87,10 +92,7 @@ export async function saveRNCPAction(rncpCode: string, title: string, structured
     let isGlobal = false;
 
     if (currentUser.role === 'super_admin') {
-        isGlobal = true; // Default to global for Super Admin in this workflow, or we could ask. Assuming Global for "Bridge" usually.
-        // Or make it tenant specific if they have one? Let's stick to the previous pattern: 
-        // If super admin has a tenantId set, use it? Or just make it global?
-        // Let's assume Global for Super Admin to populate Marketplace.
+        isGlobal = true;
     } else if (currentUser.role === 'admin') {
         if (!currentUser.tenantId) return { success: false, error: "Admin sans tenant" };
         targetTenantId = currentUser.tenantId;
@@ -99,82 +101,17 @@ export async function saveRNCPAction(rncpCode: string, title: string, structured
     }
 
     try {
-        await db.$transaction(async (tx) => {
-            // Upsert Referentiel
-            const referentiel = await tx.referentiel.upsert({
-                where: {
-                    id: (await tx.referentiel.findFirst({
-                        where: { tenantId: targetTenantId, codeRncp: rncpCode }
-                    }))?.id || 'new-id'
-                },
-                update: { title: title },
-                create: {
-                    tenantId: targetTenantId,
-                    isGlobal: isGlobal,
-                    codeRncp: rncpCode,
-                    title: title
-                }
-            });
+        // Validate with schema first
+        const validatedData = RNCPSchema.parse(structuredData);
 
-            // Process Blocs
-            for (const bloc of structuredData.blocks) {
-                const blocDb = await tx.blocCompetence.upsert({
-                    where: {
-                        id: (await tx.blocCompetence.findFirst({
-                            where: { referentielId: referentiel.id, title: bloc.title }
-                        }))?.id || 'new-id'
-                    },
-                    update: {},
-                    create: {
-                        tenantId: targetTenantId,
-                        referentielId: referentiel.id,
-                        title: bloc.title,
-                        // orderIndex could be added if available in AI output
-                    }
-                });
-
-                // Process Competencies
-                for (const comp of bloc.competencies) {
-                    const compDb = await tx.competence.upsert({
-                        where: {
-                            id: (await tx.competence.findFirst({
-                                where: { blocId: blocDb.id, description: comp.description }
-                            }))?.id || 'new-id'
-                        },
-                        update: { description: comp.description },
-                        create: {
-                            tenantId: targetTenantId,
-                            blocId: blocDb.id,
-                            description: comp.description
-                        }
-                    });
-
-                    // Process Indicators
-                    if (comp.indicators && comp.indicators.length > 0) {
-                        for (const indLabel of comp.indicators) {
-                            const existingInd = await tx.indicateur.findFirst({
-                                where: { competenceId: compDb.id, description: indLabel }
-                            });
-
-                            if (!existingInd) {
-                                await tx.indicateur.create({
-                                    data: {
-                                        competenceId: compDb.id,
-                                        description: indLabel
-                                    }
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        await saveReferentielToDb(validatedData, targetTenantId, isGlobal);
 
         revalidatePath('/admin/import');
         return { success: true, message: `Référentiel ${rncpCode} importé avec succès` };
 
     } catch (e: any) {
         console.error("Save Error:", e);
-        return { success: false, error: "Erreur lors de la sauvegarde en base de données" };
+        return { success: false, error: "Erreur lors de la sauvegarde en base de données : " + e.message };
     }
 }
+

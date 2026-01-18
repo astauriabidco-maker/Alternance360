@@ -10,6 +10,14 @@ interface LoginFormProps {
     primaryColor: string
 }
 
+const DEMO_USERS = [
+    { label: 'Super Admin', email: 'superadmin@alternance360.fr', role: 'super_admin', color: 'bg-indigo-600' },
+    { label: 'Admin CFA', email: 'admin@descartes.fr', role: 'admin', color: 'bg-rose-600' },
+    { label: 'Formateur', email: 'formateur@descartes.fr', role: 'formateur', color: 'bg-amber-500' },
+    { label: 'Tuteur', email: 'tuteur@entreprise.fr', role: 'tutor', color: 'bg-emerald-600' },
+    { label: 'Apprenti', email: 'apprenti@descartes.fr', role: 'apprentice', color: 'bg-blue-500' },
+]
+
 export function LoginForm({ primaryColor }: LoginFormProps) {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -17,8 +25,8 @@ export function LoginForm({ primaryColor }: LoginFormProps) {
     const [error, setError] = useState<string | null>(null)
     const router = useRouter()
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const handleSubmit = async (e?: React.FormEvent) => {
+        e?.preventDefault()
         setLoading(true)
         setError(null)
 
@@ -27,8 +35,8 @@ export function LoginForm({ primaryColor }: LoginFormProps) {
                 email,
                 password,
                 redirect: true,
-                redirectTo: '/login' // The middleware will then handle the specific dashboard redirect
-            })
+                callbackUrl: '/dashboard'
+            }) as any
 
             if (result?.error) {
                 setError("Identifiants incorrects. Veuillez réessayer.")
@@ -37,6 +45,24 @@ export function LoginForm({ primaryColor }: LoginFormProps) {
         } catch (err) {
             setError("Une erreur est survenue lors de la connexion.")
         } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleDemoLogin = async (demoEmail: string) => {
+        setEmail(demoEmail)
+        setPassword('password123')
+        setLoading(true)
+
+        try {
+            await signIn('credentials', {
+                email: demoEmail,
+                password: 'password123',
+                redirect: true,
+                callbackUrl: '/dashboard'
+            })
+        } catch (err) {
+            setError("Une erreur est survenue lors de la connexion démo.")
             setLoading(false)
         }
     }
@@ -94,16 +120,28 @@ export function LoginForm({ primaryColor }: LoginFormProps) {
 
             <div className="relative py-4">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                <div className="relative flex justify-center text-xs uppercase font-black text-slate-400 tracking-widest"><span className="bg-white px-4">Accès rapide</span></div>
+                <div className="relative flex justify-center text-xs uppercase font-black text-slate-400 tracking-widest"><span className="bg-white px-4">Accès Démo Rapide</span></div>
             </div>
 
-            <button
-                type="button"
-                className="w-full bg-white border border-slate-200 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
-            >
-                <Mail size={18} />
-                Lien magique (Tuteurs)
-            </button>
+            <div className="grid grid-cols-2 gap-3">
+                {DEMO_USERS.map((user) => (
+                    <button
+                        key={user.email}
+                        type="button"
+                        onClick={() => handleDemoLogin(user.email)}
+                        disabled={loading}
+                        className="flex flex-col items-center justify-center p-3 rounded-2xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all group relative overflow-hidden"
+                    >
+                        <div className={`w-2 h-2 rounded-full ${user.color} absolute top-3 right-3 shadow-sm`}></div>
+                        <span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-blue-600 tracking-tighter mb-1">
+                            {user.role.replace('_', ' ')}
+                        </span>
+                        <span className="text-xs font-bold text-slate-700 truncate w-full text-center group-hover:text-slate-900">
+                            {user.label}
+                        </span>
+                    </button>
+                ))}
+            </div>
 
             <div className="text-center mt-6">
                 <p className="text-slate-500 text-sm font-medium">
@@ -116,3 +154,4 @@ export function LoginForm({ primaryColor }: LoginFormProps) {
         </form>
     )
 }
+

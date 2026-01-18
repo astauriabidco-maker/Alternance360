@@ -4,11 +4,12 @@ import { getTicketDetails } from '@/app/actions/tickets'
 import { TicketDetailClient } from '@/components/dashboard/support/ticket-detail-client'
 import { AlertCircle } from 'lucide-react'
 
-export default async function AdminTicketDetailPage({ params }: { params: { ticketId: string } }) {
+export default async function AdminTicketDetailPage({ params }: { params: Promise<{ ticketId: string }> }) {
+    const { ticketId } = await params
     const session = await auth()
     if (session?.user?.role !== 'super_admin') redirect('/')
 
-    const ticket = await getTicketDetails(params.ticketId)
+    const ticket = await getTicketDetails(ticketId)
 
     if (!ticket) {
         return (

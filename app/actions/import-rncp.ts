@@ -1,31 +1,10 @@
 'use server'
 
-import db from '@/lib/db'
 import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-
-// Zod Schemas for Validation
-const IndicateurSchema = z.object({
-    label: z.string().min(1)
-})
-
-const CompetenceSchema = z.object({
-    description: z.string().min(3),
-    code: z.string().optional(),
-    indicateurs: z.array(IndicateurSchema).optional()
-})
-
-const BlocSchema = z.object({
-    title: z.string().min(3),
-    competences: z.array(CompetenceSchema)
-})
-
-const RNCPSchema = z.object({
-    code_rncp: z.string().min(3),
-    title: z.string().min(3),
-    blocs: z.array(BlocSchema)
-})
+import { RNCPSchema, saveReferentielToDb } from './rncp-utils'
+import db from '@/lib/db'
 
 export type ActionState = {
     message: string
@@ -47,10 +26,7 @@ export async function importRNCP(prevState: ActionState, formData: FormData): Pr
         let parsedData: z.infer<typeof RNCPSchema>
 
         if (useAI) {
-            // Truncate if too large to avoid context window issues
             const promptContext = text.slice(0, 50000)
-
-            // Try to extract code RNCP for context if possible (very basic regex)
             const codeMatch = text.match(/RNCP\d+/)
             const rncpCode = codeMatch ? codeMatch[0] : "INCONNU"
 
@@ -58,19 +34,22 @@ export async function importRNCP(prevState: ActionState, formData: FormData): Pr
             Voici les données brutes d'un référentiel (format XML ou JSON).
             Code probable : ${rncpCode}.
             
-            Utilise ces informations et tes connaissances pour générer une structure propre en Blocs > Compétences > Indicateurs au format JSON.
+            Génére une structure propre en Blocs > Compétences > Indicateurs au format JSON.
+            Inclus aussi le niveau de certification (ex: "Niveau 5", "BTS") et le domaine d'activité si présents.
             
-            Le format de sortie DOIT être une structure JSON valide correspondant strictement à ce schéma Zod :
+            Le format de sortie DOIT être une structure JSON valide correspondant strictement à ce schéma :
             {
-                code_rncp: string,
-                title: string,
-                blocs: [
+                "code_rncp": string,
+                "title": string,
+                "certificationLevel": string (optionnel),
+                "domain": string (optionnel),
+                "blocs": [
                     {
-                        title: string,
-                        competences: [
+                        "title": string,
+                        "competences": [
                             {
-                                description: string,
-                                indicateurs: [ { label: string } ] (optionnel)
+                                "description": string,
+                                "indicateurs": [ { "label": string } ] (optionnel)
                             }
                         ]
                     }
@@ -82,11 +61,9 @@ export async function importRNCP(prevState: ActionState, formData: FormData): Pr
             `
 
             try {
-                //Dynamic import to avoid circular dep issues if any, though lib is safe
                 const { generateContent } = await import('@/lib/ai')
                 const aiResponse = await generateContent(prompt)
 
-                // Clean markdown code fences if present
                 const cleanJson = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim()
                 parsedData = RNCPSchema.parse(JSON.parse(cleanJson))
             } catch (err: any) {
@@ -114,11 +91,9 @@ export async function importRNCP(prevState: ActionState, formData: FormData): Pr
         let isGlobal = false
 
         if (currentUser.role === 'super_admin') {
-            // Super Admin can choose: specific tenant OR global (if no tenantId provided)
             targetTenantId = tenantId || undefined
             isGlobal = !targetTenantId
         } else if (currentUser.role === 'admin') {
-            // Admin CFA: MUST be linked to their tenant, CANNOT be global
             if (!currentUser.tenantId) throw new Error('Admin sans tenant')
             targetTenantId = currentUser.tenantId
             isGlobal = false
@@ -126,80 +101,11 @@ export async function importRNCP(prevState: ActionState, formData: FormData): Pr
             throw new Error('Permission refusée')
         }
 
-        // 3. Perform Import in a Transaction
-        await db.$transaction(async (tx) => {
-            // Upsert Referentiel
-            const referentiel = await tx.referentiel.upsert({
-                where: {
-                    id: (await tx.referentiel.findFirst({
-                        where: { tenantId: targetTenantId, codeRncp: parsedData.code_rncp }
-                    }))?.id || 'new-id'
-                },
-                update: { title: parsedData.title },
-                create: {
-                    tenantId: targetTenantId,
-                    isGlobal: isGlobal,
-                    codeRncp: parsedData.code_rncp,
-                    title: parsedData.title
-                }
-            })
-
-            // Process Blocs
-            for (const bloc of parsedData.blocs) {
-                const blocDb = await tx.blocCompetence.upsert({
-                    where: {
-                        id: (await tx.blocCompetence.findFirst({
-                            where: { referentielId: referentiel.id, title: bloc.title }
-                        }))?.id || 'new-id'
-                    },
-                    update: {},
-                    create: {
-                        tenantId: targetTenantId,
-                        referentielId: referentiel.id,
-                        title: bloc.title
-                    }
-                })
-
-                // Process Competences
-                for (const comp of bloc.competences) {
-                    const compDb = await tx.competence.upsert({
-                        where: {
-                            id: (await tx.competence.findFirst({
-                                where: { blocId: blocDb.id, description: comp.description }
-                            }))?.id || 'new-id'
-                        },
-                        update: { description: comp.description },
-                        create: {
-                            tenantId: targetTenantId,
-                            blocId: blocDb.id,
-                            description: comp.description
-                        }
-                    })
-
-                    // Process Indicateurs (No tenantId on Indicateur normally, but check schema)
-                    // Schema: Indicateur has no tenantId, so no change needed here.
-                    if (comp.indicateurs && comp.indicateurs.length > 0) {
-                        for (const ind of comp.indicateurs) {
-                            const existingInd = await tx.indicateur.findFirst({
-                                where: { competenceId: compDb.id, description: ind.label }
-                            })
-
-                            if (!existingInd) {
-                                await tx.indicateur.create({
-                                    data: {
-                                        competenceId: compDb.id,
-                                        description: ind.label
-                                    }
-                                })
-                            }
-                        }
-                    }
-                }
-            }
-        })
+        // 3. Perform Import using Shared Utility
+        await saveReferentielToDb(parsedData, targetTenantId, isGlobal)
 
         revalidatePath('/admin/import')
-        return { message: `Imported ${parsedData.code_rncp} with success`, error: false }
+        return { message: `Référentiel ${parsedData.code_rncp} importé avec succès`, error: false }
 
     } catch (e: any) {
         console.error('Import error:', e)
@@ -209,3 +115,4 @@ export async function importRNCP(prevState: ActionState, formData: FormData): Pr
         return { message: 'Import failed', error: true, details: e.message }
     }
 }
+
