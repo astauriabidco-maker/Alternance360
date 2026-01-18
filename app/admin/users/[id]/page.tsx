@@ -2,6 +2,7 @@ import { auth } from '@/auth'
 import db from '@/lib/db'
 import { notFound, redirect } from 'next/navigation'
 import { JourneyGenerator } from '@/components/admin/journey-generator'
+import { GenerateLivretButton } from '@/components/pdf/generate-livret-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -187,6 +188,16 @@ export default async function ApprenticeProfilePage({ params }: { params: Promis
                                     <div className="text-sm font-bold text-slate-700">Dossier complet à 60%</div>
                                 </div>
                             </div>
+
+                            {activeContract && (
+                                <div className="pt-4 border-t border-slate-50">
+                                    <GenerateLivretButton
+                                        contractId={activeContract.id}
+                                        buttonText="Générer Livret PDF"
+                                        className="w-full h-12 rounded-2xl font-black uppercase tracking-wider text-[10px]"
+                                    />
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

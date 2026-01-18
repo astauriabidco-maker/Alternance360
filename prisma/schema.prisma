@@ -7,179 +7,137 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 1. Tenants (CFA)
 model Tenant {
-  id           String    @id @default(uuid())
-  name         String
-  logoUrl      String?
-  primaryColor String?   @default("#4f46e5")
-  
-  // Compliance & Branding
-  siret        String?   @unique
-  address      String?
-  ndaNumber    String?
-  uaiCode      String?
-  qualiopiCert Boolean   @default(false)
-  
-  legalRep     String?
-  contactEmail String?
-  contactPhone String?
-  website      String?
-
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  users            User[]
-  referentiels     Referentiel[]
+  id               String           @id @default(uuid())
+  name             String
+  logoUrl          String?
+  primaryColor     String?          @default("#4f46e5")
+  siret            String?          @unique
+  address          String?
+  ndaNumber        String?
+  uaiCode          String?
+  qualiopiCert     Boolean          @default(false)
+  legalRep         String?
+  contactEmail     String?
+  contactPhone     String?
+  website          String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  auditSessions    AuditSession[]
   blocsCompetences BlocCompetence[]
   competences      Competence[]
   contracts        Contract[]
   livrets          Livret[]
-  subscription     Subscription?
-  auditSessions    AuditSession[]
+  referentiels     Referentiel[]
   roles            Role[]
-  trainingOffers   TrainingOffer[]
+  subscription     Subscription?
   supportTickets   SupportTicket[]
+  trainingOffers   TrainingOffer[]
+  users            User[]
 }
 
-// 2. Users (Apprentice, Tutor, Formateur, Admin)
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String?  // Hashed password for local auth
-  fullName  String?
-  firstName String?
-  lastName  String?
-  phone     String?
-  companyName String?
-  tutorName   String?
-  
-  role      String   @default("apprentice") // admin, formateur, tutor, apprentice, super_admin
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tenantId String?
-  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // RBAC
-  roleId   String?
-  customRole Role? @relation(fields: [roleId], references: [id], onDelete: SetNull)
-
-  // Relations
-  proofs        Proof[]
-  positionings  Positioning[]
-  initialAssessments InitialAssessment[]
-  
-  contracts        Contract[] @relation("ApprenticeContracts")
-  contractsManaged Contract[] @relation("FormateurContracts")
-  
-  activities    Activity[] // If activities are direct
-
-  comments        ProofComment[]
-  notifications   NotificationLog[]
-  evaluationsReceived EvaluationIndicateur[] @relation("ApprenticeEvaluations")
+  id                   String                 @id @default(uuid())
+  email                String                 @unique
+  password             String?
+  fullName             String?
+  firstName            String?
+  lastName             String?
+  phone                String?
+  companyName          String?
+  tutorName            String?
+  role                 String                 @default("apprentice")
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  tenantId             String?
+  roleId               String?
+  activities           Activity[]
+  contractsManaged     Contract[]             @relation("FormateurContracts")
+  contracts            Contract[]             @relation("ApprenticeContracts")
+  evaluationsReceived  EvaluationIndicateur[] @relation("ApprenticeEvaluations")
   evaluationsValidated EvaluationIndicateur[] @relation("TutorEvaluations")
-  reportsGenerated HistoricalReport[]
-  
-  // Ticketing
-  ticketsAssigned SupportTicket[] @relation("TicketAssignee")
-  ticketsCreated  TicketMessage[] 
+  reportsGenerated     HistoricalReport[]
+  initialAssessments   InitialAssessment[]
+  notifications        NotificationLog[]
+  positionings         Positioning[]
+  proofs               Proof[]
+  comments             ProofComment[]
+  ticketsAssigned      SupportTicket[]        @relation("TicketAssignee")
+  ticketsCreated       TicketMessage[]
+  customRole           Role?                  @relation(fields: [roleId], references: [id])
+  tenant               Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
-// 3. Referentiels (RNCP)
 model Referentiel {
-  id        String   @id @default(uuid())
-  codeRncp  String
-  title     String
-  isGlobal  Boolean  @default(false) // If true, available to all CFAs for import
-  createdAt DateTime @default(now())
-
-  // Marketplace Metadata
+  id                 String           @id @default(uuid())
+  codeRncp           String
+  title              String
+  isGlobal           Boolean          @default(false)
+  createdAt          DateTime         @default(now())
   author             String?
-  downloadCount      Int      @default(0)
-  certificationLevel String?  // CAP, BTS, Licence Pro, etc.
-  domain             String?  // Secteur d'activité (ex: Commerce, Informatique)
-
-  tenantId String? // Optional if isGlobal
-  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  blocs     BlocCompetence[]
-  contracts Contract[]
-  trainingOffers TrainingOffer[]
+  downloadCount      Int              @default(0)
+  certificationLevel String?
+  tenantId           String?
+  domain             String?
+  blocs              BlocCompetence[]
+  contracts          Contract[]
+  tenant             Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  trainingOffers     TrainingOffer[]
 }
-
-
 
 model BlocCompetence {
-  id          String   @id @default(uuid())
-  title       String
-  orderIndex  Int      @default(0)
-  createdAt   DateTime @default(now())
-
+  id            String       @id @default(uuid())
+  title         String
+  orderIndex    Int          @default(0)
+  createdAt     DateTime     @default(now())
   tenantId      String?
-  tenant        Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   referentielId String
-  referentiel   Referentiel @relation(fields: [referentielId], references: [id], onDelete: Cascade)
-
-  competences Competence[]
+  referentiel   Referentiel  @relation(fields: [referentielId], references: [id], onDelete: Cascade)
+  tenant        Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  competences   Competence[]
 }
 
 model Competence {
-  id          String   @id @default(uuid())
-  description String
-  createdAt   DateTime @default(now())
-
-  tenantId String?
-  tenant   Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  blocId   String
-  bloc     BlocCompetence @relation(fields: [blocId], references: [id], onDelete: Cascade)
-
+  id           String         @id @default(uuid())
+  description  String
+  createdAt    DateTime       @default(now())
+  tenantId     String?
+  blocId       String
+  bloc         BlocCompetence @relation(fields: [blocId], references: [id], onDelete: Cascade)
+  tenant       Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   indicateurs  Indicateur[]
-  tsfMappings  TSFMapping[]
   positionings Positioning[]
-  proofs       Proof[] // Added relation
+  proofs       Proof[]
+  tsfMappings  TSFMapping[]
 }
 
 model Indicateur {
-  id           String   @id @default(uuid())
+  id           String                 @id @default(uuid())
   description  String
-  createdAt    DateTime @default(now())
-
+  createdAt    DateTime               @default(now())
   competenceId String
-  competence   Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
-  
   evaluations  EvaluationIndicateur[]
+  competence   Competence             @relation(fields: [competenceId], references: [id], onDelete: Cascade)
 }
 
 model EvaluationIndicateur {
-  id           String   @id @default(uuid())
-  status       String   @default("PENDING") // PENDING, ACQUIS, NON_ACQUIS, IN_PROGRESS
-  comment      String? // Commentaire tuteur
-  
-  // Validation Proof
-  isSigned     Boolean   @default(false)
-  signedAt     DateTime?
-  signatureData String?  // Base64/SVG signature
-
-  checkedAt    DateTime?
-  
-  // Actor: Tutor/Validator
-  validatorId  String?
-  validator    User?    @relation("TutorEvaluations", fields: [validatorId], references: [id])
-
-  // Actor: Apprentice (explicit link requested)
-  apprenticeId String?
-  apprentice   User?     @relation("ApprenticeEvaluations", fields: [apprenticeId], references: [id])
-
-  // Context: Contract (Keep for history/multi-contract)
-  contractId   String
-  contract     Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-
-  indicateurId String
-  indicateur   Indicateur @relation(fields: [indicateurId], references: [id], onDelete: Cascade)
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String     @id @default(uuid())
+  status        String     @default("PENDING")
+  comment       String?
+  isSigned      Boolean    @default(false)
+  signedAt      DateTime?
+  signatureData String?
+  checkedAt     DateTime?
+  validatorId   String?
+  apprenticeId  String?
+  contractId    String
+  indicateurId  String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  indicateur    Indicateur @relation(fields: [indicateurId], references: [id], onDelete: Cascade)
+  contract      Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  apprentice    User?      @relation("ApprenticeEvaluations", fields: [apprenticeId], references: [id])
+  validator     User?      @relation("TutorEvaluations", fields: [validatorId], references: [id])
 
   @@unique([contractId, indicateurId])
   @@index([apprenticeId])
@@ -187,160 +145,124 @@ model EvaluationIndicateur {
   @@index([indicateurId])
 }
 
-// 4. Contracts & TSF
 model Contract {
-  id           String   @id @default(uuid())
-  startDate    DateTime
-  endDate      DateTime
-  
-  // Final Validation
-  tutorSignature String? // Base64 or URL
-  signedAt       DateTime?
-
-  createdAt    DateTime @default(now())
-
-  tenantId      String
-  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  referentielId String?
-  referentiel   Referentiel? @relation(fields: [referentielId], references: [id], onDelete: Cascade)
-  
-  userId        String?
-  user          User?       @relation("ApprenticeContracts", fields: [userId], references: [id], onDelete: Cascade)
-
-  formateurId   String?
-  formateur     User?       @relation("FormateurContracts", fields: [formateurId], references: [id])
-
-  versionId     String?     // For non-retroactivity snapshots
-  periodType    String?     @default("SEMESTER") // SEMESTER, TRIMESTER, MONTH
-  
-  tsfStatus     String      @default("DRAFT")    // DRAFT (pre-positioning), VALIDATED (post J+7)
-  isLocked      Boolean     @default(false)      // Locked after J+7 signature
-  lockedAt      DateTime?
-  changeLog     String?     // JSON or text string explaining version changes
-
-  periodes   Period[]
-  tsfMapping TSFMapping[]
+  id                 String                 @id @default(uuid())
+  startDate          DateTime
+  endDate            DateTime
+  tutorSignature     String?
+  signedAt           DateTime?
+  createdAt          DateTime               @default(now())
+  tenantId           String
+  referentielId      String?
+  userId             String?
+  formateurId        String?
+  versionId          String?
+  periodType         String?                @default("SEMESTER")
+  tsfStatus          String                 @default("DRAFT")
+  isLocked           Boolean                @default(false)
+  lockedAt           DateTime?
+  changeLog          String?
+  attendance         Attendance[]
+  formateur          User?                  @relation("FormateurContracts", fields: [formateurId], references: [id])
+  user               User?                  @relation("ApprenticeContracts", fields: [userId], references: [id], onDelete: Cascade)
+  referentiel        Referentiel?           @relation(fields: [referentielId], references: [id], onDelete: Cascade)
+  tenant             Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tsfEvaluations     EvaluationIndicateur[]
+  reports            HistoricalReport[]
   initialAssessments InitialAssessment[]
-  milestones  Milestone[]
-  attendance  Attendance[]
-  livrets     Livret[]
-  tsfEvaluations EvaluationIndicateur[]
-  reports     HistoricalReport[]
+  livrets            Livret[]
+  milestones         Milestone[]
+  periodes           Period[]
+  tsfMapping         TSFMapping[]
 }
 
 model Period {
-  id         String   @id @default(uuid())
-  label      String
-  startDate  DateTime
-  endDate    DateTime
-  orderIndex Int
-  createdAt  DateTime @default(now())
-
-  contractId String
-  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-
+  id          String       @id @default(uuid())
+  label       String
+  startDate   DateTime
+  endDate     DateTime
+  orderIndex  Int
+  createdAt   DateTime     @default(now())
+  contractId  String
+  contract    Contract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
   tsfMappings TSFMapping[]
 }
 
 model TSFMapping {
-  id           String   @id @default(uuid())
-  plannedStart DateTime?
-  plannedEnd   DateTime?
-  lieu         String?   // 'ENTREPRISE', 'CFA', 'MIXTE'
-  status       String    @default("PENDING") // PENDING, ACQUIS, NON_ACQUIS
-  
-  // Validation flags (simple boolean for MVP)
-  flagCfa        Boolean @default(false)
-  flagEntreprise Boolean @default(false)
-
-  // Snapshot for non-retroactivity (Deep Copy)
-  versionId             String?
-  competenceDescription String? 
+  id                    String     @id @default(uuid())
+  plannedStart          DateTime?
+  plannedEnd            DateTime?
+  lieu                  String?
+  status                String     @default("PENDING")
+  flagCfa               Boolean    @default(false)
+  flagEntreprise        Boolean    @default(false)
+  createdAt             DateTime   @default(now())
+  contractId            String
+  competenceId          String
+  periodId              String?
   blocTitle             String?
-
-  createdAt    DateTime @default(now())
-
-  contractId   String
-  contract     Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  competenceId String
-  competence   Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
-  periodId     String?
-  period       Period?     @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  competenceDescription String?
+  versionId             String?
+  period                Period?    @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  competence            Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+  contract              Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@unique([contractId, competenceId, periodId])
 }
 
 model HistoricalReport {
-  id           String   @id @default(uuid())
-  type         String   // SEMESTER_REPORT, FINAL_REPORT
-  periodLabel  String
-  generatedAt  DateTime @default(now())
-  
-  // Content Snapshot (JSON)
-  data         String   // JSON content of the report at that time
-  
-  // Verification
+  id               String   @id @default(uuid())
+  type             String
+  periodLabel      String
+  generatedAt      DateTime @default(now())
+  data             String
   verificationHash String
-  
-  // Relations
-  contractId   String
-  contract     Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  
-  authorId     String?
-  author       User?    @relation(fields: [authorId], references: [id])
+  contractId       String
+  authorId         String?
+  author           User?    @relation(fields: [authorId], references: [id])
+  contract         Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
-// 5. Assessments & Proofs
 model InitialAssessment {
-  id          String    @id @default(uuid())
-  status      String    @default("DRAFT") // DRAFT, SUBMITTED, VALIDATED
-  submittedAt DateTime?
-  validatedAt DateTime?
-  createdAt   DateTime  @default(now())
-
-  userId      String // Candidate/Apprentice
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  contractId  String?
-  contract    Contract?  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-
-  validatorId String? // Formateur/Tutor who validated
-  
+  id           String        @id @default(uuid())
+  status       String        @default("DRAFT")
+  submittedAt  DateTime?
+  validatedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  userId       String
+  contractId   String?
+  validatorId  String?
+  contract     Contract?     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   positionings Positioning[]
 }
 
 model Positioning {
-  id           String   @id @default(uuid())
-  levelInitial Int // 1-4
-  targetLevel  Int? // 1-4
-  createdAt    DateTime @default(now())
-
-  // Can belong to Initial Assessment OR just general positioning
+  id           String             @id @default(uuid())
+  levelInitial Int
+  targetLevel  Int?
+  createdAt    DateTime           @default(now())
   assessmentId String?
-  assessment   InitialAssessment? @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-
   userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   competenceId String
-  competence   Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+  competence   Competence         @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment   InitialAssessment? @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 }
 
 model Proof {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  type        String   // PDF, IMG, VIDEO, LINK
-  url         String   // Local path or URL
-  status      String   @default("PENDING") // PENDING, VALIDATED, REJECTED
-  feedback    String?
-  createdAt   DateTime @default(now())
-
+  id           String         @id @default(uuid())
+  title        String
+  description  String?
+  type         String
+  url          String
+  status       String         @default("PENDING")
+  feedback     String?
+  createdAt    DateTime       @default(now())
   userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
   competenceId String?
-  competence   Competence? @relation(fields: [competenceId], references: [id])
-
+  competence   Competence?    @relation(fields: [competenceId], references: [id])
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments     ProofComment[]
 }
 
@@ -348,266 +270,215 @@ model ProofComment {
   id        String   @id @default(uuid())
   content   String
   createdAt DateTime @default(now())
-
   proofId   String
-  proof     Proof    @relation(fields: [proofId], references: [id], onDelete: Cascade)
-
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
+  proof     Proof    @relation(fields: [proofId], references: [id], onDelete: Cascade)
 }
 
-// 6. Monitoring & Compliance (Qualiopi)
 model Milestone {
   id             String    @id @default(uuid())
-  type           String    // START_INTERVIEW, PROBATION_REVIEW, SEMESTER_REVIEW
+  type           String
   label          String
   dueDate        DateTime
-  status         String    @default("PENDING") // PENDING, COMPLETED, OVERDUE
+  status         String    @default("PENDING")
   completionNote String?
   completedAt    DateTime?
   createdAt      DateTime  @default(now())
-
   contractId     String
   contract       Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
 model Attendance {
-  id          String   @id @default(uuid())
-  date        DateTime
-  hours       Float
-  status      String   // PRESENT, ABSENT_JUSTIFIED, ABSENT_UNJUSTIFIED
-  type        String   @default("CFA") // CFA, ENTREPRISE
-  createdAt   DateTime @default(now())
-
-  contractId  String
-  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  date       DateTime
+  hours      Float
+  status     String
+  type       String   @default("CFA")
+  createdAt  DateTime @default(now())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
 model NotificationLog {
   id          String   @id @default(uuid())
-  type        String   // EMAIL, PUSH, ALERT
+  type        String
   recipientId String
-  recipient   User     @relation(fields: [recipientId], references: [id])
   title       String
   content     String
-  metadata    String?  // JSON string for additional context
+  metadata    String?
   sentAt      DateTime @default(now())
+  recipient   User     @relation(fields: [recipientId], references: [id])
 }
 
-// Placeholder for Activities just to be safe if referneced
 model Activity {
-    id String @id @default(uuid())
-    title String
-    description String?
-    date DateTime?
-    createdAt DateTime @default(now())
-    userId String
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime?
+  createdAt   DateTime  @default(now())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Livret (Generated PDF Archive)
 model Livret {
-    id          String   @id @default(uuid())
-    documentId  String   @unique
-    filePath    String
-    status      String   @default("GENERATED") // GENERATED, SIGNED, ARCHIVED
-    generatedAt DateTime @default(now())
-
-    contractId  String
-    contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-    
-    tenantId    String
-    tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  id          String   @id @default(uuid())
+  documentId  String   @unique
+  filePath    String
+  status      String   @default("GENERATED")
+  generatedAt DateTime @default(now())
+  contractId  String
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
-// Leads (Marketing Capture)
 model Lead {
-    id          String   @id @default(uuid())
-    email       String
-    source      String?  @default("landing_page")
-    tenantName  String?
-    status      String   @default("PENDING") // PENDING, PROCESSED, REJECTED
-    processedAt DateTime?
-    createdAt   DateTime @default(now())
-
-    trainingOfferId String?
-    trainingOffer   TrainingOffer? @relation(fields: [trainingOfferId], references: [id])
+  id              String         @id @default(uuid())
+  email           String
+  source          String?        @default("landing_page")
+  tenantName      String?
+  status          String         @default("PENDING")
+  processedAt     DateTime?
+  createdAt       DateTime       @default(now())
+  trainingOfferId String?
+  trainingOffer   TrainingOffer? @relation(fields: [trainingOfferId], references: [id])
 }
 
 model TrainingOffer {
-  id          String   @id @default(uuid())
-  title       String   // Marketing Title (e.g. "BTS MCO - Rentrée Sept 2026")
-  description String?  // Commercial Pitch
-  
-  // Commercial Info
-  status      String   @default("DRAFT") // DRAFT, OPEN, CLOSED, FULL
-  price       Float    // Public Price
-  funding     String?  // Funding details (OPCO, CPF, etc.)
-  
-  // Logistics
-  startDate   DateTime
-  endDate     DateTime
-  duration    Int      // In Hours
-  campus      String?  // Location
-  seats       Int?     // Max capacity, optional
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  id            String      @id @default(uuid())
+  title         String
+  description   String?
+  status        String      @default("DRAFT")
+  price         Float
+  funding       String?
+  startDate     DateTime
+  endDate       DateTime
+  duration      Int
+  campus        String?
+  seats         Int?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   tenantId      String
-  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   referentielId String
+  leads         Lead[]
   referentiel   Referentiel @relation(fields: [referentielId], references: [id], onDelete: Cascade)
-  
-  leads         Lead[]      // Link leads to specific offers
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
-// 7. Platform Wide (Super Admin)
+
 model AuditLog {
-    id          String   @id @default(uuid())
-    action      String   // E.g., 'CREATE_USER', 'PROVISION_TENANT'
-    entityType  String?  // E.g., 'User', 'Tenant'
-    entityId    String?
-    actorId     String
-    tenantId    String?  // Associated tenant if any
-    details     String?  // JSON string
-    createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  action     String
+  entityType String?
+  entityId   String?
+  actorId    String
+  tenantId   String?
+  details    String?
+  createdAt  DateTime @default(now())
 }
 
 model PlatformConfig {
-    key         String   @id
-    value       String
-    description String?
-    group       String   @default("GENERAL") // GENERAL, BRANDING, SECURITY, TECH
-    isSecret    Boolean  @default(false)
-    updatedAt   DateTime @updatedAt
+  key         String   @id
+  value       String
+  description String?
+  group       String   @default("GENERAL")
+  isSecret    Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
 }
 
-// 8. Billing & Subscriptions
 model Subscription {
-    id        String   @id @default(uuid())
-    plan      String   @default("ESSENTIAL") // ESSENTIAL, PRO, ENTERPRISE
-    status    String   @default("ACTIVE")    // ACTIVE, EXPIRED, CANCELLED
-    startDate DateTime @default(now())
-    endDate   DateTime?
-    
-    tenantId  String   @unique
-    tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-    
-    invoices  Invoice[]
+  id        String    @id @default(uuid())
+  plan      String    @default("ESSENTIAL")
+  status    String    @default("ACTIVE")
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  tenantId  String    @unique
+  invoices  Invoice[]
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Invoice {
-    id          String   @id @default(uuid())
-    amount      Float
-    status      String   @default("PAID") // PAID, PENDING, OVERDUE
-    dueDate     DateTime
-    paidAt      DateTime?
-    pdfUrl      String?
-    createdAt   DateTime @default(now())
-
-    subscriptionId String
-    subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  id             String       @id @default(uuid())
+  amount         Float
+  status         String       @default("PAID")
+  dueDate        DateTime
+  paidAt         DateTime?
+  pdfUrl         String?
+  createdAt      DateTime     @default(now())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 }
 
-// 9. Compliance Portal (Audit)
 model AuditSession {
-    id        String   @id @default(uuid())
-    token     String   @unique // Secure random token for URL access
-    scope     String   // JSON string of allowed apprentice IDs
-    expiresAt DateTime
-    
-    tenantId  String
-    tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-    
-    createdBy String   // User ID of the admin who created the session
-    createdAt DateTime @default(now())
-
-    accessLogs AuditAccessLog[]
+  id         String           @id @default(uuid())
+  token      String           @unique
+  scope      String
+  expiresAt  DateTime
+  tenantId   String
+  createdBy  String
+  createdAt  DateTime         @default(now())
+  accessLogs AuditAccessLog[]
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
-
-
-// 11. Archiving (RGPD/Qualiopi)
 model ArchiveVault {
   id              String   @id @default(uuid())
   apprenticeName  String
   contractRef     String   @unique
   tenantId        String
-  
-  // The Holy Grail: Full Signed Document
   finalPdfUrl     String
-  
-  // Compressed Data for future search if needed
-  fullHistoryJson String  // Prisma doesn't support JSON on SQLite well, usually. But user said Json. SQLite supports JSON text. Using String to be safe or JSON if using PG. Will use String for dev.db compatibility or JSON if sure. The user code said `Json`. SQLite supports JSON since recent versions but Prisma maps it to String sometimes? No, Prisma supports Json on SQLite.
-  // Wait, previous models used Strings for JSON. I should check Config. 
-  // User provided: fullHistoryJson Json
-  // I will use String for safety on 'dev.db' (SQLite) unless I check capabilities. But schema has `AuditLog` using `details String? // JSON string`. 
-  // I will stick to String for JSON content to be consistent with existing `details`.
-  
+  fullHistoryJson String
   archivedAt      DateTime @default(now())
-  purgeDate       DateTime // J+5 years
-  
+  purgeDate       DateTime
+
   @@index([tenantId])
   @@index([purgeDate])
 }
 
 model AuditAccessLog {
-    id          String   @id @default(uuid())
-    resource    String   // E.g., 'CONTRACT:uuid', 'TSF:uuid'
-    details     String?  // JSON context (e.g. indicating which indicator)
-    accessedAt  DateTime @default(now())
-
-    sessionId   String
-    session     AuditSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id         String       @id @default(uuid())
+  resource   String
+  details    String?
+  accessedAt DateTime     @default(now())
+  sessionId  String
+  session    AuditSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
-// 10. RBAC System
 model Role {
-    id          String   @id @default(uuid())
-    name        String
-    description String?
-    permissions String   // JSON array of permission strings e.g. ["CONTRACT_WRITE", "TSF_VALIDATE"]
-    
-    tenantId    String
-    tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-    
-    users       User[]
-
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-
-    @@unique([tenantId, name])
-}
-
-// 12. Support Ticketing System
-model SupportTicket {
   id          String   @id @default(uuid())
-  subject     String
-  status      String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED
-  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH
-  category    String   @default("GENERAL") // TECH, BILLING, PEDAGOGY
+  name        String
+  description String?
+  permissions String
+  tenantId    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users       User[]
 
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, name])
+}
 
-  // Optional: Assign to specific admin
+model SupportTicket {
+  id           String          @id @default(uuid())
+  subject      String
+  status       String          @default("OPEN")
+  priority     String          @default("MEDIUM")
+  category     String          @default("GENERAL")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  tenantId     String
   assignedToId String?
-  assignedTo   User?   @relation("TicketAssignee", fields: [assignedToId], references: [id])
-
-  messages TicketMessage[]
+  assignedTo   User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages     TicketMessage[]
 }
 
 model TicketMessage {
-  id        String   @id @default(uuid())
+  id        String        @id @default(uuid())
   content   String
-  createdAt DateTime @default(now())
-  
-  ticketId String
-  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id])
+  createdAt DateTime      @default(now())
+  ticketId  String
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id])
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 }

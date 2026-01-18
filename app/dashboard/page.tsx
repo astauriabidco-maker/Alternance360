@@ -6,6 +6,7 @@ import { UploadForm } from './upload-form'
 import { CompetenceRadar } from '@/components/pedagogie/competence-radar'
 import { MilestoneWidget } from '@/components/suivi/milestone-widget'
 import { getContractHealth } from '../actions/monitoring'
+import { GenerateLivretButton } from '@/components/pdf/generate-livret-button'
 import {
     Plus,
     FileText,
@@ -73,11 +74,20 @@ export default async function DashboardPage() {
                     )}
                     <Link
                         href="/profile"
-                        className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded-2xl border border-slate-200 transition-all active:scale-95"
+                        className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded-2xl border border-slate-200 transition-all active:scale-95"
                     >
-                        <UserCircle size={20} className="text-indigo-600" />
-                        Mon Profil
+                        <UserCircle size={18} className="text-slate-400" />
+                        Profil
                     </Link>
+
+                    {contract && (
+                        <GenerateLivretButton
+                            contractId={contract.id}
+                            variant="outline"
+                            className="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 h-auto rounded-2xl border border-slate-200 transition-all active:scale-95"
+                            buttonText="Livret PDF"
+                        />
+                    )}
                     <div className="flex items-center gap-3 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100">
                         <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
                         <span className="text-sm font-bold text-indigo-700 hidden sm:inline">Session active</span>

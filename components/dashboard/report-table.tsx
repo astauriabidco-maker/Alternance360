@@ -1,12 +1,13 @@
-'use client'
-
+import { useState } from "react"
 import { BlockReport, ProgressReport } from "@/app/actions/report-generator"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Printer, ShieldCheck, MapPin } from "lucide-react"
+import { Printer, ShieldCheck, MapPin, Download, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 export function ReportTable({ data }: { data: ProgressReport }) {
+    const [isGenerating, setIsGenerating] = useState(false)
 
     // Status Badge Helper
     const StatusBadge = ({ status }: { status: BlockReport['status'] }) => {
@@ -20,18 +21,63 @@ export function ReportTable({ data }: { data: ProgressReport }) {
         }
     }
 
+    const handleDownloadOfficialLivret = async () => {
+        try {
+            setIsGenerating(true)
+            const response = await fetch('/api/livret/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contractId: data.contractId })
+            })
+
+            const result = await response.json()
+
+            if (result.success && result.downloadUrl) {
+                // Trigger download
+                const link = document.createElement('a')
+                link.href = result.downloadUrl
+                link.download = `livret-${result.documentId}.pdf`
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+                toast.success("Livret généré et téléchargé avec succès")
+            } else {
+                throw new Error(result.error || "Erreur lors de la génération")
+            }
+        } catch (error) {
+            console.error("Download error:", error)
+            toast.error("Impossible de générer le livret officiel")
+        } finally {
+            setIsGenerating(false)
+        }
+    }
+
     return (
         <div className="w-full max-w-5xl mx-auto bg-white p-8 print:p-0">
             {/* Header for Screen Only */}
             <div className="flex justify-between items-center mb-8 print:hidden">
                 <h2 className="text-2xl font-bold text-slate-900">Rapport de Progression</h2>
-                <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors"
-                >
-                    <Printer className="w-4 h-4" />
-                    Imprimer le Bilan PDF
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={handleDownloadOfficialLivret}
+                        disabled={isGenerating}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                    >
+                        {isGenerating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Download className="w-4 h-4" />
+                        )}
+                        Livret Officiel PDF
+                    </button>
+                    <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 rounded-md hover:bg-slate-50 transition-colors"
+                    >
+                        <Printer className="w-4 h-4" />
+                        Imprimer Bilan
+                    </button>
+                </div>
             </div>
 
             {/* Document Header */}
