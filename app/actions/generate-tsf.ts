@@ -8,6 +8,18 @@ export async function generateTSF(contractId: string) {
     const session = await auth()
     if (!session?.user) throw new Error('Unauthorized')
 
+    const result = await internalGenerateTSF(contractId)
+    if (result.success) {
+        revalidatePath(`/dashboard/contracts/${contractId}`)
+    }
+    return result
+}
+
+/**
+ * Internal logic for TSF Generation.
+ * Can be called by API routes or background tasks.
+ */
+export async function internalGenerateTSF(contractId: string) {
     try {
         // 1. Fetch Contract
         const contract = await db.contract.findUnique({
@@ -51,8 +63,7 @@ export async function generateTSF(contractId: string) {
             }
 
             // 3. Fetch Positionnement (Initial Diagnostics)
-            // Use userId from contract if available
-            if (contract.userId) {
+            if (contract.userId && contract.referentielId) {
                 const positions = await tx.positioning.findMany({
                     where: { userId: contract.userId },
                     select: { competenceId: true, levelInitial: true }
@@ -74,26 +85,25 @@ export async function generateTSF(contractId: string) {
                 const inserts: any[] = []
                 const nbBlocs = blocs.length || 1
 
-                blocs.forEach((bloc, index) => {
+                blocs.forEach((bloc: any, index: number) => {
                     const periodIndexRaw = Math.floor((index / nbBlocs) * periodsIds.length)
                     const targetPeriodId = periodsIds[Math.min(periodIndexRaw, periodsIds.length - 1)]
 
-                    bloc.competences.forEach((comp) => {
+                    bloc.competences.forEach((comp: any) => {
                         const isAcquis = acquisMap.has(comp.id)
 
                         inserts.push({
                             contractId,
                             competenceId: comp.id,
+                            periodId: targetPeriodId, // Actually assign the period
                             status: isAcquis ? 'ACQUIS' : 'PENDING',
-                            // In Prisma schema status default is PENDING
                             flagCfa: !isAcquis,
                             flagEntreprise: !isAcquis
                         })
                     })
                 })
 
-                // 6. Bulk Insert (Prisma createMany is good here if using Postgres, but SQLite has some limits)
-                // SQLite supports createMany in Prisma 4.10+
+                // 6. Bulk Insert
                 await tx.tSFMapping.deleteMany({ where: { contractId } })
                 if (inserts.length > 0) {
                     await tx.tSFMapping.createMany({
@@ -103,7 +113,6 @@ export async function generateTSF(contractId: string) {
             }
         })
 
-        revalidatePath(`/dashboard/contracts/${contractId}`)
         return { success: true }
 
     } catch (e: any) {

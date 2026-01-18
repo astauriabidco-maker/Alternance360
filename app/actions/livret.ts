@@ -2,6 +2,9 @@
 
 import db from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
+import { auth } from '@/auth'
+import { dispatchWebhook } from '@/lib/webhooks'
+import { revalidatePath } from 'next/cache'
 
 export interface LivretData {
     documentId: string
@@ -95,7 +98,7 @@ export async function consolidateLivretData(contractId: string): Promise<LivretD
     // Process blocs and competences with TSF status
     const statusMap = new Map(contract.tsfMapping.map(m => [m.competenceId, m.status]))
 
-    const blocs = contract.referentiel.blocs.map(bloc => {
+    const blocs = contract.referentiel?.blocs.map(bloc => {
         const competences = bloc.competences.map(c => ({
             id: c.id,
             description: c.description,
@@ -104,13 +107,13 @@ export async function consolidateLivretData(contractId: string): Promise<LivretD
         const validatedCount = competences.filter(c => c.status === 'ACQUIS').length
         return {
             id: bloc.id,
-            code: bloc.code,
+            code: (bloc as any).code || bloc.title.substring(0, 10), // Fallback if code is missing
             title: bloc.title,
             competences,
             validatedCount,
             totalCount: competences.length
         }
-    })
+    }) || []
 
     const totalCompetences = blocs.reduce((acc, b) => acc + b.totalCount, 0)
     const validatedCompetences = blocs.reduce((acc, b) => acc + b.validatedCount, 0)
@@ -155,4 +158,55 @@ export async function consolidateLivretData(contractId: string): Promise<LivretD
             totalBlocs: blocs.length
         }
     }
+}
+
+/**
+ * Marks a livret as SIGNED and triggers the outgoing webhook.
+ */
+export async function signLivretAction(livretId: string) {
+    const session = await auth()
+    if (!session?.user) throw new Error("Unauthorized")
+
+    const livret = await db.livret.findUnique({
+        where: { id: livretId },
+        include: {
+            contract: {
+                include: {
+                    user: true
+                }
+            },
+            tenant: true
+        }
+    })
+
+    if (!livret) throw new Error("Livret not found")
+    if (livret.tenantId !== session.user.tenantId) throw new Error("Unauthorized tenant")
+
+    // 1. Update DB
+    const updatedLivret = await db.livret.update({
+        where: { id: livretId },
+        data: {
+            status: 'SIGNED',
+            signedAt: new Date()
+        } as any
+    })
+
+    // 2. Calculate final progress (re-using consolidate logic or simple stats)
+    const data = await consolidateLivretData(livret.contractId)
+    const progressScore = data?.stats.progressPercent || 0
+
+    // 3. Dispatch Webhook
+    dispatchWebhook(livret.tenant, 'LIVRET_SIGNED', {
+        livretId: livret.id,
+        apprenticeExternalId: (livret.contract.user as any)?.externalId || null,
+        apprenticeEmail: livret.contract.user?.email,
+        downloadUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}${livret.filePath}`,
+        progressScore,
+        signedAt: (updatedLivret as any).signedAt
+    }).catch(err => console.error("Webhook Dispatch Failed:", err))
+
+    revalidatePath('/dashboard')
+    revalidatePath(`/admin/users/${livret.contract.userId}`)
+
+    return { success: true, signedAt: (updatedLivret as any).signedAt }
 }

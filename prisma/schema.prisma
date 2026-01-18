@@ -23,6 +23,8 @@ model Tenant {
   website          String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  webhookUrl       String?
+  webhookSecret    String?
   auditSessions    AuditSession[]
   blocsCompetences BlocCompetence[]
   competences      Competence[]
@@ -34,6 +36,7 @@ model Tenant {
   supportTickets   SupportTicket[]
   trainingOffers   TrainingOffer[]
   users            User[]
+  apiKeys          ApiKey[]
 }
 
 model User {
@@ -49,6 +52,7 @@ model User {
   role                 String                 @default("apprentice")
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
+  externalId           String?                @unique
   tenantId             String?
   roleId               String?
   activities           Activity[]
@@ -162,6 +166,7 @@ model Contract {
   isLocked           Boolean                @default(false)
   lockedAt           DateTime?
   changeLog          String?
+  externalId         String?                @unique
   attendance         Attendance[]
   formateur          User?                  @relation("FormateurContracts", fields: [formateurId], references: [id])
   user               User?                  @relation("ApprenticeContracts", fields: [userId], references: [id], onDelete: Cascade)
@@ -327,6 +332,7 @@ model Livret {
   filePath    String
   status      String   @default("GENERATED")
   generatedAt DateTime @default(now())
+  signedAt    DateTime?
   contractId  String
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
@@ -481,4 +487,17 @@ model TicketMessage {
   authorId  String
   author    User          @relation(fields: [authorId], references: [id])
   ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id        String    @id @default(uuid())
+  name      String
+  keyHash   String    @unique
+  prefix    String
+  lastUsed  DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
