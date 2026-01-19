@@ -37,6 +37,7 @@ model Tenant {
   trainingOffers   TrainingOffer[]
   users            User[]
   apiKeys          ApiKey[]
+  remediationPlans RemediationPlan[]
 }
 
 model User {
@@ -57,7 +58,9 @@ model User {
   roleId               String?
   activities           Activity[]
   contractsManaged     Contract[]             @relation("FormateurContracts")
+  contractsTutored     Contract[]             @relation("TutorContracts")
   contracts            Contract[]             @relation("ApprenticeContracts")
+  magicTokens          MagicToken[]
   evaluationsReceived  EvaluationIndicateur[] @relation("ApprenticeEvaluations")
   evaluationsValidated EvaluationIndicateur[] @relation("TutorEvaluations")
   reportsGenerated     HistoricalReport[]
@@ -160,6 +163,7 @@ model Contract {
   referentielId      String?
   userId             String?
   formateurId        String?
+  tutorId            String?
   versionId          String?
   periodType         String?                @default("SEMESTER")
   tsfStatus          String                 @default("DRAFT")
@@ -169,6 +173,7 @@ model Contract {
   externalId         String?                @unique
   attendance         Attendance[]
   formateur          User?                  @relation("FormateurContracts", fields: [formateurId], references: [id])
+  tutor              User?                  @relation("TutorContracts", fields: [tutorId], references: [id])
   user               User?                  @relation("ApprenticeContracts", fields: [userId], references: [id], onDelete: Cascade)
   referentiel        Referentiel?           @relation(fields: [referentielId], references: [id], onDelete: Cascade)
   tenant             Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -179,6 +184,8 @@ model Contract {
   milestones         Milestone[]
   periodes           Period[]
   tsfMapping         TSFMapping[]
+  magicTokens        MagicToken[]
+  remediationPlans   RemediationPlan[]
 }
 
 model Period {
@@ -335,6 +342,15 @@ model Livret {
   signedAt    DateTime?
   contractId  String
   tenantId    String
+  
+  // Tripartite Signatures
+  apprenticeSignedAt      DateTime?
+  apprenticeSignatureData String?
+  tutorSignedAt           DateTime?
+  tutorSignatureData      String?
+  cfaSignedAt             DateTime?
+  cfaSignatureData        String?
+  
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
@@ -500,4 +516,32 @@ model ApiKey {
 
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model MagicToken {
+  id         String   @id @default(uuid())
+  tokenHash  String   @unique
+  type       String   @default("TUTOR_ACCESS")
+  expiresAt  DateTime
+  contractId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RemediationPlan {
+  id            String    @id @default(uuid())
+  triggerReason String
+  status        String    @default("DRAFT")
+  actions       String    @default("[]")
+  createdAt     DateTime  @default(now())
+  resolvedAt    DateTime?
+  contractId    String
+  createdById   String?
+  tenantId      String
+
+  contract      Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
